@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тест политического компаса</title>
+<meta name="description" content="Точный тест политического компаса: определите свою идеологию и положение на координатах.">
+<style>
+  :root{
+    --text:#2C2C2B; --text2:#7D7A75; --canvas:#FFFFFF; --soft:#F9F8F7;
+    --soft2:#F0EFED; --border:#E6E5E3; --accent:#2783DE; --accent-soft:#E5F2FC;
+    --green:#46A171; --red:#E56458; --purple:#9b6cd4; --blue:#3a6ea5;
+    --radius:12px;
+    --q-libleft:#46A171; --q-libright:#9b6cd4; --q-authleft:#E56458; --q-authright:#3a6ea5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --text:#FFFFFF; --text2:rgba(255,255,255,.65); --canvas:#191919; --soft:#202020;
+      --soft2:#383836; --border:rgba(255,255,255,.20); --accent:#5E9FE8; --accent-soft:rgba(94,159,232,.12);
+      --green:#72BC8F; --red:#E97366; --purple:#b18ee0; --blue:#5E9FE8;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--canvas);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:32px 24px 64px}
+  h1{font-size:2rem;line-height:1.2;letter-spacing:-.02em;margin-bottom:12px}
+  h2{font-size:1.4rem;line-height:1.3;margin-bottom:8px}
+  .muted{color:var(--text2)}
+  .card{background:var(--soft);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--accent);color:#fff;border:none;border-radius:8px;
+    padding:12px 24px;font-size:1rem;font-weight:600;cursor:pointer;
+    min-height:48px;transition:filter .15s ease}
+  .btn:hover{filter:brightness(1.05)}
+  .btn:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+  .btn.secondary{background:var(--soft2);color:var(--text);border:1px solid var(--border)}
+  .btn-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+
+  /* Intro */
+  #intro{text-align:center}
+  #intro .lede{font-size:1.1rem;color:var(--text2);max-width:560px;margin:0 auto 8px}
+  .feat{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:28px 0}
+  .feat div{background:var(--soft);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:left}
+  .feat b{display:block;margin-bottom:2px}
+  @media(max-width:520px){.feat{grid-template-columns:1fr}}
+
+  /* Quiz */
+  .progress{position:sticky;top:0;background:var(--canvas);padding:16px 0 8px;z-index:5}
+  .bar{height:8px;background:var(--soft2);border-radius:99px;overflow:hidden}
+  .bar span{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s ease;width:0}
+  .pcount{font-size:.875rem;color:var(--text2);margin-top:8px}
+  .qtext{font-size:1.35rem;line-height:1.35;margin:28px 0 24px;font-weight:600}
+  .opts{display:flex;flex-direction:column;gap:12px}
+  .opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+    background:var(--soft);border:1px solid var(--border);border-radius:10px;
+    padding:16px 18px;font-size:1rem;color:var(--text);cursor:pointer;min-height:56px;
+    transition:border-color .12s ease,background .12s ease}
+  .opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .opt:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+  .opt .dot{width:16px;height:16px;border-radius:99px;border:2px solid var(--border);flex:0 0 auto}
+  .opt.sd .dot{border-color:var(--red)}
+  .opt.d .dot{border-color:var(--purple)}
+  .opt.a .dot{border-color:var(--green)}
+  .opt.sa .dot{border-color:var(--blue)}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .link{background:none;border:none;color:var(--text2);cursor:pointer;font-size:.95rem;padding:8px}
+  .link:hover{color:var(--text)}
+
+  /* Results */
+  #result{display:none}
+  .compass-box{display:flex;justify-content:center;margin:8px 0 20px}
+  canvas{max-width:100%;height:auto;border-radius:var(--radius)}
+  .verdict{text-align:center;margin-bottom:24px}
+  .verdict .kind{display:inline-block;font-size:.8rem;font-weight:600;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--accent);background:var(--accent-soft);
+    padding:4px 12px;border-radius:99px;margin-bottom:12px}
+  .verdict h2{font-size:1.9rem}
+  .coords{display:flex;gap:24px;justify-content:center;margin:16px 0;flex-wrap:wrap}
+  .coords div{text-align:center}
+  .coords b{display:block;font-size:1.5rem}
+  .coords small{color:var(--text2)}
+  .desc{background:var(--soft);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-top:8px}
+  .near h3{font-size:1rem;margin:24px 0 12px}
+  .near ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+  .near li{display:flex;justify-content:space-between;background:var(--soft);
+    border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:.95rem}
+  .near li span:last-child{color:var(--text2)}
+  .hidden{display:none!important}
+  footer{text-align:center;color:var(--text2);font-size:.85rem;margin-top:40px}
+  footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- INTRO -->
+  <section id="intro">
+    <h1>Тест политического компаса</h1>
+    <p class="lede">44 утверждения по двум осям — экономической и социальной. В конце вы получите точную или ближайшую идеологию и увидите своё положение на координатах.</p>
+    <div class="feat">
+      <div><b>Экономическая ось</b><span class="muted">Левые ↔ Правые</span></div>
+      <div><b>Социальная ось</b><span class="muted">Либертарии ↔ Авторитарии</span></div>
+      <div><b>Идеология</b><span class="muted">Точная или приближённая</span></div>
+      <div><b>Визуализация</b><span class="muted">Точка на компасе + PNG</span></div>
+    </div>
+    <button class="btn" id="start">Начать тест</button>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quiz" class="hidden">
+    <div class="progress">
+      <div class="bar"><span id="barfill"></span></div>
+      <div class="pcount" id="pcount"></div>
+    </div>
+    <p class="qtext" id="qtext"></p>
+    <div class="opts">
+      <button class="opt sd" data-v="-1"><span class="dot"></span>Полностью не согласен</button>
+      <button class="opt d" data-v="-0.5"><span class="dot"></span>Скорее не согласен</button>
+      <button class="opt a" data-v="0.5"><span class="dot"></span>Скорее согласен</button>
+      <button class="opt sa" data-v="1"><span class="dot"></span>Полностью согласен</button>
+    </div>
+    <div class="nav">
+      <button class="link" id="back">← Назад</button>
+      <button class="link" id="restartq">Начать заново</button>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result">
+    <div class="verdict">
+      <span class="kind" id="kind"></span>
+      <h2 id="ideology"></h2>
+    </div>
+    <div class="compass-box"><canvas id="compass" width="520" height="560"></canvas></div>
+    <div class="coords">
+      <div><b id="ex"></b><small>Экономика<br>(–лево / +право)</small></div>
+      <div><b id="ey"></b><small>Общество<br>(–либ. / +автор.)</small></div>
+    </div>
+    <div class="desc" id="desc"></div>
+    <div class="near">
+      <h3>Ближайшие идеологии</h3>
+      <ul id="nearlist"></ul>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="download">Скачать изображение</button>
+      <button class="btn secondary" id="restart">Пройти заново</button>
+    </div>
+  </section>
+
+  <footer>
+    Результат носит ориентировочный характер и не является политической диагностикой.
+  </footer>
+</div>
+
+<script>
+/* ================= Вопросы =================
+   axis: 'econ' (+ = правые / рынок) или 'soc' (+ = авторитарии)
+   dir: направление, в котором согласие сдвигает по оси */
+const QUESTIONS = [
+  // --- Экономическая ось (22) ---
+  {t:"Корпорации получают слишком много власти в ущерб обычным людям.",axis:"econ",dir:-1},
+  {t:"Свободный рынок эффективнее государства распределяет ресурсы.",axis:"econ",dir:1},
+  {t:"Богатые должны платить значительно более высокие налоги.",axis:"econ",dir:-1},
+  {t:"Приватизация государственных предприятий обычно идёт на пользу экономике.",axis:"econ",dir:1},
+  {t:"Государство должно гарантировать каждому базовый доход.",axis:"econ",dir:-1},
+  {t:"Профсоюзы приносят экономике больше вреда, чем пользы.",axis:"econ",dir:1},
+  {t:"Здравоохранение должно быть бесплатным и государственным.",axis:"econ",dir:-1},
+  {t:"Государственное регулирование бизнеса чаще мешает, чем помогает.",axis:"econ",dir:1},
+  {t:"Большой разрыв в доходах между людьми несправедлив.",axis:"econ",dir:-1},
+  {t:"Успех человека в первую очередь зависит от его собственных усилий.",axis:"econ",dir:1},
+  {t:"Ключевые отрасли (энергетика, транспорт) должны принадлежать государству.",axis:"econ",dir:-1},
+  {t:"Снижение налогов для бизнеса стимулирует рост и создаёт рабочие места.",axis:"econ",dir:1},
+  {t:"Государство обязано обеспечивать сильную социальную защиту.",axis:"econ",dir:-1},
+  {t:"Конкуренция, а не сотрудничество, — главный двигатель прогресса.",axis:"econ",dir:1},
+  {t:"Международная торговля должна служить интересам трудящихся, а не прибыли.",axis:"econ",dir:-1},
+  {t:"Каждый вправе свободно получать прибыль от своего капитала.",axis:"econ",dir:1},
+  {t:"Образование должно быть бесплатным на всех уровнях.",axis:"econ",dir:-1},
+  {t:"Экономическое неравенство — естественный и приемлемый результат свободы.",axis:"econ",dir:1},
+  {t:"Ресурсы общества должны распределяться по потребностям, а не по рынку.",axis:"econ",dir:-1},
+  {t:"Государственные социальные программы порождают иждивенчество.",axis:"econ",dir:1},
+  {t:"Прибыль корпораций следует ограничивать ради общественного блага.",axis:"econ",dir:-1},
+  {t:"Дерегуляция экономики в целом полезна для общества.",axis:"econ",dir:1},
+  // --- Социальная ось (22) ---
+  {t:"Государство вправе следить за гражданами ради безопасности.",axis:"soc",dir:1},
+  {t:"Люди должны быть свободны употреблять любые вещества на свой риск.",axis:"soc",dir:-1},
+  {t:"Сильный решительный лидер важнее долгих демократических процедур.",axis:"soc",dir:1},
+  {t:"Однополые браки должны быть полностью легальны.",axis:"soc",dir:-1},
+  {t:"Патриотизм и национальную гордость нужно воспитывать в школах.",axis:"soc",dir:1},
+  {t:"Каждый вправе жить так, как хочет, если не вредит другим.",axis:"soc",dir:-1},
+  {t:"Смертная казнь оправдана за особо тяжкие преступления.",axis:"soc",dir:1},
+  {t:"Цензура в СМИ недопустима даже во время кризиса.",axis:"soc",dir:-1},
+  {t:"Традиционные ценности — основа здорового общества.",axis:"soc",dir:1},
+  {t:"Мигранты обогащают культуру страны.",axis:"soc",dir:-1},
+  {t:"Дисциплина и военная подготовка закаляют характер и полезны обществу.",axis:"soc",dir:1},
+  {t:"Гражданам можно свободно критиковать власть без ограничений.",axis:"soc",dir:-1},
+  {t:"Порядок и стабильность важнее личных свобод.",axis:"soc",dir:1},
+  {t:"Наркополитика должна строиться на лечении, а не на наказании.",axis:"soc",dir:-1},
+  {t:"Религия должна играть заметную роль в государственной жизни.",axis:"soc",dir:1},
+  {t:"Люди сами вправе решать вопросы своего тела и личной жизни.",axis:"soc",dir:-1},
+  {t:"Протесты, нарушающие общественный порядок, нужно жёстко пресекать.",axis:"soc",dir:1},
+  {t:"Права человека важнее национального суверенитета.",axis:"soc",dir:-1},
+  {t:"Школы должны прививать уважение к власти и авторитету.",axis:"soc",dir:1},
+  {t:"Свобода слова должна защищать даже оскорбительные мнения.",axis:"soc",dir:-1},
+  {t:"Обязательная воинская служба полезна для нации.",axis:"soc",dir:1},
+  {t:"Государство не должно вмешиваться в частную жизнь людей.",axis:"soc",dir:-1}
+];
+
+/* ================= Идеологии (x: экономика, y: общество) ================= */
+const IDEOLOGIES = [
+  {n:"Анархо-коммунизм",x:-9,y:-8,d:"Общество без государства и частной собственности, основанное на добровольной кооперации и распределении по потребностям."},
+  {n:"Анархо-синдикализм",x:-8,y:-7,d:"Безгосударственный социализм, где экономикой управляют профсоюзы и рабочие советы."},
+  {n:"Либертарный социализм",x:-7,y:-6,d:"Социальное равенство при максимуме личных свобод и самоуправлении вместо государственного принуждения."},
+  {n:"Зелёная политика",x:-5,y:-4,d:"Экология, социальная справедливость и низовая демократия как основа политики."},
+  {n:"Демократический социализм",x:-6,y:-2,d:"Социалистическая экономика, достигаемая демократическим путём при сохранении гражданских свобод."},
+  {n:"Социал-демократия",x:-4,y:-2,d:"Рыночная экономика с сильным государством всеобщего благосостояния и защитой прав."},
+  {n:"Прогрессивизм",x:-4,y:-3,d:"Социальные реформы, равенство возможностей и расширение личных свобод."},
+  {n:"Социальный либерализм",x:-3,y:-2,d:"Свобода личности в сочетании с государственным регулированием ради социальной справедливости."},
+  {n:"Центризм",x:0,y:0,d:"Умеренность и прагматизм: баланс между рынком и государством, свободой и порядком."},
+  {n:"Классический либерализм",x:4,y:-4,d:"Максимум личных и экономических свобод при минимальном вмешательстве государства."},
+  {n:"Либертарианство",x:7,y:-7,d:"Свободный рынок и полная личная автономия при предельно малом государстве."},
+  {n:"Минархизм",x:7,y:-6,d:"Государство ограничено защитой прав, судом и обороной; всё остальное — рынку и обществу."},
+  {n:"Анархо-капитализм",x:9,y:-9,d:"Полное отсутствие государства; все услуги, включая право и защиту, предоставляет свободный рынок."},
+  {n:"Неолиберализм",x:6,y:1,d:"Дерегуляция, приватизация и свободный рынок при сохранении сильных институтов."},
+  {n:"Консерватизм",x:4,y:3,d:"Свободный рынок, традиционные ценности и уважение к устоявшимся институтам."},
+  {n:"Христианская демократия",x:2,y:2,d:"Социальная рыночная экономика и традиционные ценности с христианской этикой."},
+  {n:"Социальный консерватизм",x:2,y:4,d:"Защита традиционного уклада и морали при активной роли государства в общественной жизни."},
+  {n:"Национальный консерватизм",x:5,y:5,d:"Приоритет нации, традиции и порядка при рыночной, но регулируемой экономике."},
+  {n:"Правый популизм",x:4,y:6,d:"Апелляция к \"народу\" против элит, национализм и жёсткая социальная политика."},
+  {n:"Левый популизм",x:-5,y:3,d:"Перераспределение в пользу большинства и сильное государство против экономических элит."},
+  {n:"Государственный социализм",x:-6,y:6,d:"Плановая экономика и общественная собственность под контролем сильного государства."},
+  {n:"Троцкизм",x:-8,y:6,d:"Революционный марксизм с идеей перманентной мировой революции."},
+  {n:"Марксизм-ленинизм",x:-8,y:8,d:"Однопартийное государство, плановая экономика и диктатура пролетариата."},
+  {n:"Маоизм",x:-8,y:8.5,d:"Марксизм-ленинизм с опорой на крестьянство и перманентную революцию."},
+  {n:"Сталинизм",x:-7,y:9,d:"Централизованное плановое государство с тотальным контролем и культом власти."},
+  {n:"Абсолютная монархия",x:5,y:8,d:"Неограниченная власть монарха, сословный порядок и традиция."},
+  {n:"Фашизм",x:6,y:9,d:"Тоталитарный национализм, культ государства и вождя, подавление инакомыслия."},
+  {n:"Нацизм",x:7,y:9.5,d:"Крайний тоталитарный национализм с расовой идеологией и абсолютной властью государства."}
+];
+
+/* ================= Логика ================= */
+const $ = s => document.querySelector(s);
+let answers = new Array(QUESTIONS.length).fill(0);
+let idx = 0;
+let lastResult = null;
+
+const intro=$('#intro'), quiz=$('#quiz'), result=$('#result');
+
+function show(section){
+  intro.classList.add('hidden');
+  quiz.classList.add('hidden');
+  result.style.display='none';
+  if(section==='intro') intro.classList.remove('hidden');
+  if(section==='quiz') quiz.classList.remove('hidden');
+  if(section==='result') result.style.display='block';
+  window.scrollTo(0,0);
+}
+
+function renderQuestion(){
+  const q = QUESTIONS[idx];
+  $('#qtext').textContent = q.t;
+  $('#pcount').textContent = `Вопрос ${idx+1} из ${QUESTIONS.length}`;
+  $('#barfill').style.width = ((idx)/QUESTIONS.length*100)+'%';
+  $('#back').style.visibility = idx===0 ? 'hidden' : 'visible';
+  document.querySelectorAll('.opt').forEach(o=>{
+    const on = parseFloat(o.dataset.v)===answers[idx] && answers[idx]!==0;
+    o.style.borderColor = on ? 'var(--accent)' : '';
+    o.style.background = on ? 'var(--accent-soft)' : '';
+  });
+}
+
+function answer(v){
+  answers[idx]=v;
+  if(idx < QUESTIONS.length-1){ idx++; renderQuestion(); }
+  else finish();
+}
+
+function finish(){
+  $('#barfill').style.width='100%';
+  let econSum=0, econMax=0, socSum=0, socMax=0;
+  QUESTIONS.forEach((q,i)=>{
+    const val = answers[i]*q.dir;
+    if(q.axis==='econ'){ econSum+=val; econMax+=1; }
+    else { socSum+=val; socMax+=1; }
+  });
+  const x = +( (econSum/econMax)*10 ).toFixed(2);
+  const y = +( (socSum/socMax)*10 ).toFixed(2);
+  const cx = Math.max(-10,Math.min(10,x));
+  const cy = Math.max(-10,Math.min(10,y));
+
+  const ranked = IDEOLOGIES.map(o=>({...o, dist:Math.hypot(o.x-cx,o.y-cy)}))
+                            .sort((a,b)=>a.dist-b.dist);
+  const best = ranked[0];
+  const exact = best.dist <= 1.6;
+
+  lastResult = {cx,cy,best,ranked,exact};
+
+  $('#kind').textContent = exact ? 'Точное совпадение' : 'Ближайшая идеология';
+  $('#ideology').textContent = best.n;
+  $('#ex').textContent = (cx>0?'+':'')+cx;
+  $('#ey').textContent = (cy>0?'+':'')+cy;
+  $('#desc').textContent = best.d;
+
+  const nl = $('#nearlist'); nl.innerHTML='';
+  ranked.slice(0,3).forEach((o,i)=>{
+    const match = Math.max(0, Math.round(100 - o.dist*5));
+    const li=document.createElement('li');
+    li.innerHTML = `<span>${i+1}. ${o.n}</span><span>совпадение ~${match}%</span>`;
+    nl.appendChild(li);
+  });
+
+  drawCompass(cx,cy,best.n);
+  show('result');
+}
+
+function drawCompass(x,y,label){
+  const cv=$('#compass'), ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const pad=30, top=20;
+  const size=W-pad*2;
+  const ox=pad, oy=top;
+  const cxp=ox+size/2, cyp=oy+size/2;
+  const css = getComputedStyle(document.documentElement);
+  const col = n => css.getPropertyValue(n).trim();
+  const dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  ctx.clearRect(0,0,W,H);
+
+  const half=size/2;
+  ctx.globalAlpha=dark?0.55:0.85;
+  ctx.fillStyle=col('--q-authleft'); ctx.fillRect(ox,oy,half,half);
+  ctx.fillStyle=col('--q-authright');ctx.fillRect(cxp,oy,half,half);
+  ctx.fillStyle=col('--q-libleft'); ctx.fillRect(ox,cyp,half,half);
+  ctx.fillStyle=col('--q-libright');ctx.fillRect(cxp,cyp,half,half);
+  ctx.globalAlpha=1;
+
+  ctx.strokeStyle=dark?'rgba(255,255,255,.18)':'rgba(255,255,255,.7)';
+  ctx.lineWidth=1;
+  for(let i=1;i<10;i++){
+    const gx=ox+size*i/10, gy=oy+size*i/10;
+    ctx.beginPath();ctx.moveTo(gx,oy);ctx.lineTo(gx,oy+size);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ox,gy);ctx.lineTo(ox+size,gy);ctx.stroke();
+  }
+  ctx.strokeStyle=dark?'rgba(255,255,255,.85)':'rgba(0,0,0,.55)';
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(cxp,oy);ctx.lineTo(cxp,oy+size);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ox,cyp);ctx.lineTo(ox+size,cyp);ctx.stroke();
+  ctx.strokeStyle=col('--border');ctx.lineWidth=1.5;ctx.strokeRect(ox,oy,size,size);
+
+  ctx.fillStyle=col('--text');
+  ctx.font='600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('Авторитаризм', cxp, oy-7);
+  ctx.fillText('Либертарианство', cxp, oy+size+18);
+  ctx.save();
+  ctx.translate(ox-9, cyp); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Левые', 0, 0); ctx.restore();
+  ctx.save();
+  ctx.translate(ox+size+20, cyp); ctx.rotate(Math.PI/2);
+  ctx.fillText('Правые', 0, 0); ctx.restore();
+
+  const px = cxp + (x/10)*half;
+  const py = cyp - (y/10)*half;
+  ctx.strokeStyle=dark?'rgba(255,255,255,.5)':'rgba(0,0,0,.35)';
+  ctx.setLineDash([4,4]);ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(px,oy);ctx.lineTo(px,oy+size);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ox,py);ctx.lineTo(ox+size,py);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();ctx.arc(px,py,11,0,Math.PI*2);
+  ctx.fillStyle='#fff';ctx.fill();
+  ctx.lineWidth=3;ctx.strokeStyle=col('--accent');ctx.stroke();
+  ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);
+  ctx.fillStyle=col('--accent');ctx.fill();
+
+  ctx.fillStyle=col('--text');
+  ctx.font='700 16px -apple-system,Segoe UI,Roboto,Arial,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(label, W/2, oy+size+46);
+  ctx.font='400 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif';
+  ctx.fillStyle=col('--text2');
+  ctx.fillText(`Экономика ${x>0?'+':''}${x} · Общество ${y>0?'+':''}${y}`, W/2, oy+size+68);
+}
+
+$('#start').addEventListener('click',()=>{ idx=0; answers.fill(0); renderQuestion(); show('quiz'); });
+$('#restart').addEventListener('click',()=>{ idx=0; answers.fill(0); show('intro'); });
+$('#restartq').addEventListener('click',()=>{ idx=0; answers.fill(0); show('intro'); });
+$('#back').addEventListener('click',()=>{ if(idx>0){ idx--; renderQuestion(); } });
+document.querySelectorAll('.opt').forEach(o=>{
+  o.addEventListener('click',()=>answer(parseFloat(o.dataset.v)));
+});
+$('#download').addEventListener('click',()=>{
+  const cv=$('#compass');
+  const link=document.createElement('a');
+  link.download='политический-компас.png';
+  link.href=cv.toDataURL('image/png');
+  link.click();
+});
+
+if(window.matchMedia){
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
+    if(lastResult) drawCompass(lastResult.cx,lastResult.cy,lastResult.best.n);
+  });
+}
+</script>
+</body>
+</html>
